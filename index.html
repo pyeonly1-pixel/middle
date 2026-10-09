@@ -1309,7 +1309,7 @@ const CGROUPS = [
 // ── 교과서 12~64쪽·노트·학습지 연도 전수 반영 ──
 (function () {
   const Y = (u, ev, y) => {               // 연도 문제 + 연표 동시 등록
-    HQ.push([u, 'Y', ev + '이(가) 일어난(이루어진) 해는?', y]);
+    HQ.push([u, 'Y', '다음이 일어난 해는?  ' + ev, y]);
     (HEV[y] = HEV[y] || []); if (!HEV[y].includes(ev)) HEV[y].push(ev);
   };
   [
@@ -1861,6 +1861,67 @@ CGROUPS.push(
  ['Cu + 2Ag⁺ → Cu²⁺ + 2Ag','CH₄ + 2O₂ → CO₂ + 2H₂O','2C + O₂ → 2CO','Fe₂O₃ + 3CO → 2Fe + 3CO₂','CaO + H₂O → Ca(OH)₂','H⁺ + OH⁻ → H₂O'],
  ['생물 다양성 협약','외래종(생태계 교란 생물)','생태 통로','서식지 단편화'],
 );
+
+// ── 시험에 안 나올 지엽적인 내용 걷어내기 ──
+(function () {
+  const inRange = y => +y >= 1910 && +y <= 1945;
+  // 문제 문장에 이 말이 들어가면 뺀다
+  const dropQ = [
+    // 연표 세부·날짜(연도 문제로 충분)
+    '날짜는?', '때는?', '기간은?', '시기는?', '생몰 연도',
+    // 교과서 곁가지 인물·통계·일화
+    '서간도로 이주해 2018년', '사진만 보고 결혼', '대한 부인 구제회', '시각 장애인', '경북 영덕 장날', '순사보로서',
+    '수감자 직업', '시위 건수', '경찰 기관과 경찰 인원', '문관 출신은 몇 명', '면직물, 주류', '풍자화', '이륭양행', '대한국 국제',
+    '자유시의 원래 이름', '승리 요인', '5파괴', '7가살', '장제스', '항복 문서에 서명', '오광심', '김학규', '거친 도시 순서', '『백범일지』',
+    '충남도청', '혼마치', '청계천', '조선형평사를 창립한 백정' , '형평사를 창립한 백정', '수평사', '경성역 창고', '물산 장려 운동 당시 세워진',
+    '정우회 선언에서 민족주의 세력과 협력하자고 한 조건', '200명 이상', '6,661명', '유언비어',
+    '「아리랑」', '「황성옛터」', '「병정님」', '「운수 좋은 날」', '「태평천하」', '「광야」', '「마쓰이 오장 송가」', '나운규',
+    '김동인', '김활란', '문명기', '얀 루프 오헤른', '평화의 소녀상', '샌프란시스코', '고노 담화', '첫 공개 증언', '처음 공개 증언', '군 성노예',
+    '731 부대', '무솔리니', '히틀러', '뉴딜', '경제 블록', '방공 협정', '히로시마', '강제 동원 현황 그래프',
+    '베르사유 조약으로', '워싱턴 회의', '두 진영 가운데', '산둥반도', '포츠담 선언에서 일본의 주권', '얄타 회담에서 비밀 협정',
+    '1919~1920년', '간민회', '신한촌', '삼원보', '교과서에 나온 두 사람', '교과서에 나온 인물', '이동휘의 출신', '상환 약속',
+    '석유 회사', '자작농의 가입', '소작료는 대개',
+    // 범위 밖 연도·지엽 연표(연도 문제)
+    '하와이에 첫 한국인 이민자', '스탈린의', '쌀값이 폭락한 해', '범죄 즉결례 제정', '경찰범 처벌 규칙 제정', '소련(소비에트', '극동 인민 대표 회의',
+    '이상설 순국', '필라델피아 한인 시가행진', '대한국 국제 반포', '강우규의', '박재혁의', '김익상의', '김상옥의', '김지섭의', '나석주의 동양', '남자현의',
+    '성진회 조직', '소녀회 조직', '개통이', '평원 고무 공장', '서울 고무 공장 여성 노동자 파업이', '『조선말 큰사전』', '영화 「아리랑」', '경성 방송국',
+    '미드웨이', '상하이에 일본군 위안소', '김학순의', '박영심', '난징 대학살이', '조선 의용군으로 개편이', '이광수의 「민족적 경륜」',
+  ];
+  const dropA = new Set(['허은','심영식','윤악이','정호석','강주룡','나혜석','최용신','사이토 마코토','시게미쓰 마모루','이학찬','김마리아','남자현','강우규','군무 도독부','소녀회','장쭤린']);
+  const keep = it => !(it[1] === 'Y' && !inRange(it[3])) && !dropA.has(it[3]) && !dropQ.some(s => it[2].includes(s));
+  const kept = HQ.filter(keep); HQ.length = 0; kept.forEach(x => HQ.push(x));
+  // 연표: 1910~1945만, 남은 문제와 상관없는 지엽 항목 정리
+  const dropEv = ['하와이','스탈린','쌀값','범죄 즉결례','경찰범','소련','극동 인민','이상설 순국','필라델피아','대한국 국제','개통','평원 고무','서울 고무','큰사전','아리랑','경성 방송국','미드웨이','위안소','김학순','고노','박영심','성진회','소녀회','강우규','박재혁의','김익상의','김상옥의','김지섭의','남자현','민족적 경륜','난징 대학살'];
+  Object.keys(HEV).forEach(y => {
+    if (!inRange(y)) { delete HEV[y]; return; }
+    HEV[y] = [...new Set(HEV[y])].filter(e => !dropEv.some(s => e.includes(s)));
+    if (!HEV[y].length) delete HEV[y];
+  });
+  // 새로 넣은 연도 문제가 기존 연도 문제와 겹치면 뺀다
+  const norm = s => s.replace(/[\s·()「」『』]/g, '');
+  const oldY = HQ.filter(x => x[1] === 'Y' && !x[2].startsWith('다음이 일어난 해는?'));
+  const kept3 = HQ.filter(x => {
+    if (x[1] !== 'Y' || !x[2].startsWith('다음이 일어난 해는?')) return true;
+    const ev = norm(x[2].replace('다음이 일어난 해는?', '')).slice(0, 4);
+    return !oldY.some(o => o[3] === x[3] && norm(o[2]).includes(ev));
+  });
+  HQ.length = 0; kept3.forEach(x => HQ.push(x));
+  // 연도 문제의 답이 연표에 꼭 있도록
+  const kept2 = HQ.filter(it => it[1] !== 'Y' || HEV[it[3]]); HQ.length = 0; kept2.forEach(x => HQ.push(x));
+  // 헷갈리는 묶음도 남은 답만
+  const ans = new Set(HQ.map(x => x[3]));
+  const g = HGROUPS.map(gr => gr.filter(a => ans.has(a))).filter(gr => gr.length >= 2); HGROUPS.length = 0; g.forEach(x => HGROUPS.push(x));
+
+  // 사회·과학: 순위·통계 수치, 지엽 사례
+  const sDrop = ['146개국','191개국','언론 자유 지수 순위','성별 임금 격차(OECD','도서관 접근','아동 노동 인구','수도권에 사는 인구','디지털 장의사','2024년 헌법재판소','채택된 곳(1992)','30세 이상 여성에게 선거권','쫓겨난 영국 왕','즉위한 두 왕','KOICA','UNDP는 무엇의 약자','영화 〈설국열차〉','양성평등 채용 목표제','지역 인재 채용 할당제','농어촌 학생 특별 전형'];
+  const s2 = SQ.filter(it => !sDrop.some(s => it[2].includes(s))); SQ.length = 0; s2.forEach(x => SQ.push(x));
+  const sAns = new Set(SQ.map(x => x[3]));
+  const sg = SGROUPS.map(gr => gr.filter(a => sAns.has(a))).filter(gr => gr.length >= 2); SGROUPS.length = 0; sg.forEach(x => SGROUPS.push(x));
+  const cDrop = ['고생대 후기의 대기 중 산소 농도','"기(紀)" 이름','황소개구리','CaO 10·20·30 g'];
+  const c2 = CQ.filter(it => !cDrop.some(s => it[2].includes(s))); CQ.length = 0; c2.forEach(x => CQ.push(x));
+  const cAns = new Set(CQ.map(x => x[3]));
+  const cg = CGROUPS.map(gr => gr.filter(a => cAns.has(a))).filter(gr => gr.length >= 2); CGROUPS.length = 0; cg.forEach(x => CGROUPS.push(x));
+})();
 
 function mkDesc(list) { const d = {}; list.forEach(x => { if (x[4] && !d[x[3]]) d[x[3]] = x[4]; }); return d; }
 const SUBJ = {
