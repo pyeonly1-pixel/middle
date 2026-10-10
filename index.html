@@ -150,6 +150,31 @@
   .fkey { margin: 9px 0 0; padding: 7px 9px; background: var(--paper); border-radius: 4px; font-size: .9em; line-height: 1.5; word-break: keep-all; }
   .fkey b { color: var(--seal); }
   @media (max-width: 380px) { .fbox { padding: 11px 10px 9px; } }
+  .flow .k.kx { cursor: pointer; text-decoration: underline dotted var(--seal); text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
+  .flow .k.kx:hover { color: var(--seal); }
+  .flow .k.kx:focus-visible { outline: 2px solid var(--seal); outline-offset: 1px; border-radius: 2px; }
+  .fhide .k:not(.show) { text-decoration: none; }
+  .fhide .k.kx.show { text-decoration: underline dotted var(--seal); text-underline-offset: 3px; }
+  /* 정보창: 폰은 아래에서 올라오는 시트, 넓은 화면은 가운데 창 */
+  .iwrap { position: fixed; inset: 0; z-index: 50; background: rgba(20,18,16,.5); display: flex; align-items: flex-end; justify-content: center; }
+  .isheet { background: var(--card); color: var(--ink); width: 100%; max-height: 82vh; overflow-y: auto; border-radius: 14px 14px 0 0; padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px)); box-shadow: 0 -6px 30px rgba(0,0,0,.25); animation: iup .2s ease; }
+  @keyframes iup { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .isheet { animation: none; } }
+  @media (min-width: 700px) { .iwrap { align-items: center; } .isheet { width: 540px; max-height: 80vh; border-radius: 10px; padding-bottom: 18px; } }
+  .ihead { position: sticky; top: 0; background: var(--card); display: flex; align-items: center; gap: 10px; padding: 14px 0 10px; border-bottom: 2px solid var(--seal); margin-bottom: 12px; }
+  .ihead h2 { flex: 1; margin: 0; font-family: 'Noto Serif KR', 'Nanum Myeongjo', 'Batang', serif; font-size: 19px; font-weight: 900; line-height: 1.35; word-break: keep-all; }
+  .iclose { font: inherit; font-size: 20px; line-height: 1; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--paper); color: var(--ink); cursor: pointer; flex: none; }
+  .iclose:focus-visible { outline: 2px solid var(--seal); outline-offset: 2px; }
+  .isheet h3 { font-size: 12.5px; color: var(--seal); margin: 16px 0 6px; letter-spacing: .02em; }
+  .idesc { font-size: 15px; line-height: 1.65; margin: 0; padding: 10px 12px; background: var(--paper); border-left: 3px solid var(--seal); border-radius: 0 4px 4px 0; word-break: keep-all; }
+  .idesc b { display: block; font-size: 13px; color: var(--ink-soft); }
+  .iyears, .iqs { list-style: none; padding: 0; margin: 0; }
+  .iyears li { display: grid; grid-template-columns: 46px 1fr; gap: 8px; font-size: 13.5px; line-height: 1.55; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .iyears b { color: var(--seal); font-variant-numeric: tabular-nums; }
+  .iqs li { font-size: 13.5px; line-height: 1.55; padding: 7px 0; border-bottom: 1px solid var(--line); word-break: keep-all; }
+  .iqs em { font-style: normal; font-weight: 700; }
+  .iboxes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .isheet .btn { margin-top: 16px; font-size: 14px; padding: 11px; }
 </style>
 </head>
 <body>
@@ -226,6 +251,13 @@
     <div class="row" id="allUnits"></div>
     <ul class="weak" id="allList"></ul>
   </section>
+</div>
+
+<div class="iwrap" id="infoWrap" hidden>
+  <div class="isheet" id="infoSheet" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+    <div class="ihead"><h2 id="infoTitle"></h2><button class="iclose" id="infoClose" type="button" aria-label="닫기">×</button></div>
+    <div id="infoBody"></div>
+  </div>
 </div>
 
 <script>
@@ -2775,7 +2807,11 @@ function flowText(parent, s) {
     if (!part) return;
     if (part === '→') { parent.appendChild(el('span', 'far', '→')); return; }
     const m = part.match(/^\[\[(.+)\]\]$/);
-    if (m) { const k = el('span', 'k', m[1]); k.tabIndex = -1; parent.appendChild(k); }
+    if (m) {
+      const k = el('span', 'k', m[1]); k.dataset.kw = m[1];
+      if (hasInfo(m[1])) { k.classList.add('kx'); k.tabIndex = 0; k.setAttribute('role', 'button'); }
+      parent.appendChild(k);
+    }
     else parent.appendChild(document.createTextNode(part));
   });
 }
@@ -2819,6 +2855,7 @@ function renderFlow() {
   if (!shown.length) { list.appendChild(el('p', 'note', flowTodo ? '이 범위의 박스를 모두 외웠어요. "안 외운 것만"을 끄면 다시 보여요.' : '이 단원에는 박스가 없어요.')); return; }
   shown.forEach(([b, i]) => {
     const card = el('article', 'fbox' + (flowDone.has(b.t) ? ' done' : ''));
+    card.dataset.i = i;
     const head = el('header', 'fhead');
     const no = el('span', 'fno', String(i + 1));
     const tt = el('div', 'ftt'); tt.append(el('h2', '', b.t), el('small', '', b.y));
@@ -2848,10 +2885,108 @@ function renderFlow() {
     list.appendChild(card);
   });
 }
+// 가린 칸은 첫 번째 누름에 보이고, 보이는 핵심어를 누르면 정보창이 열린다
 $('flowList').addEventListener('click', e => {
-  const k = e.target.closest('.k');
-  if (k && flowHide) k.classList.toggle('show');
+  const k = e.target.closest('.k'); if (!k) return;
+  if (flowHide && !k.classList.contains('show')) { k.classList.add('show'); return; }
+  if (k.classList.contains('kx')) openInfo(k.dataset.kw, k);
 });
+$('flowList').addEventListener('keydown', e => {
+  const k = e.target.closest('.kx');
+  if (k && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); k.click(); }
+});
+
+// ── 핵심어 정보: 앱의 설명(DESC) · 관련 문제(Q) · 연표(EV) · 흐름 박스에서 모은다 ──
+const fnorm = s => String(s).replace(/[\s·,()（）'"「」『』]/g, '');
+let infoCache = { subj: null, map: new Map() };
+// 박스 속 짧은 표현 → 문제은행에서 찾을 때 쓸 말
+const FALIAS = {
+  '3부':'3부(참의부·정의부·신민부)', '중국 관내 이동':'중국 관내로 이동', '폐간':'폐간된 한글 신문', '냅코 작전':'냅코(NAPKO) 작전', '8·15 광복':'일본 항복',
+  '지혜':'지혜 – 통치자', '용기':'용기 – 방위자', '예방주의':'범죄 예방',
+  '바다':'최초의 생명체가 바다', '남획':'남획이란', '온난':'중생대가 가장 온난', '판게아 분열':'판게아가 분열', '4회':'빙하기 4회, 간빙기 3회', '3회':'빙하기 4회, 간빙기 3회',
+  '인류 조상':'인류의 조상', '유전 원리':'유전되는 원리', '나방':'나방의 색', '검게':'겉불꽃', '붉게':'속불꽃', '물':'광합성에서 산화되는',
+  '연소':'메테인 연소', 'CO':'일산화 탄소(CO)', '노랑':'BTB 용액이 산성', '초록':'BTB 용액이 중성', '파랑':'BTB 용액이 염기성',
+  '최고':'온도가 가장 높은', '최저':'전류의 세기가 가장 약한', '발열':'발열 반응', '흡열':'흡열 반응',
+  '< 0':'ΔH < 0', '> 0':'ΔH > 0', '생성물 − 반응물':'반응 엔탈피(ΔH)를 구하는 식',
+};
+function infoFor(kw) {
+  if (infoCache.subj !== subj) infoCache = { subj, map: new Map() };
+  if (infoCache.map.has(kw)) return infoCache.map.get(kw);
+  const q = FALIAS[kw] || kw;
+  const n = fnorm(q), keys = Object.keys(DESC);
+  let dk = DESC[q] ? q : keys.find(a => fnorm(a) === n);
+  if (!dk && n.length >= 3) dk = keys.find(a => fnorm(a).startsWith(n) || n.startsWith(fnorm(a)) && fnorm(a).length >= 3);
+  const qs = [], seen = new Set();
+  const add = it => { if (it[1] === 'S' || seen.has(it[2])) return; seen.add(it[2]); qs.push(it); };
+  Q.forEach(it => { if (fnorm(it[3]) === n) add(it); });                                  // 답이 바로 이 말인 문제
+  if (n.length >= 3) {
+    Q.forEach(it => { if (fnorm(it[3]).includes(n)) add(it); });                           // 답에 들어 있는 문제
+    Q.forEach(it => { if (fnorm(it[2]).includes(n)) add(it); });                           // 문제에 나오는 것
+  }
+  const years = n.length >= 2 ? Object.keys(EV).filter(y => EV[y].some(e => fnorm(e).includes(n))).sort() : [];
+  const boxes = (FLOW[subj] || []).map((b, i) => [b, i]).filter(([b]) => b.l.some(l => l.includes('[[' + kw + ']]')));
+  const info = { kw, dk, qs, years, boxes };
+  infoCache.map.set(kw, info);
+  return info;
+}
+function hasInfo(kw) { const f = infoFor(kw); return !!(f.dk || f.qs.length || f.years.length); }
+
+let infoBack = null;
+function closeInfo() {
+  $('infoWrap').hidden = true; document.body.style.overflow = '';
+  if (infoBack && document.contains(infoBack)) infoBack.focus({ preventScroll: true });
+}
+function goBox(i) {
+  closeInfo();
+  let card = document.querySelector('#flowList .fbox[data-i="' + i + '"]');
+  if (!card) { flowUnit = 0; flowTodo = false; renderFlow(); card = document.querySelector('#flowList .fbox[data-i="' + i + '"]'); }
+  if (!card) return;
+  card.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+}
+function openInfo(kw, from) {
+  const f = infoFor(kw); infoBack = from || null;
+  const box = $('infoBody'); box.innerHTML = '';
+  $('infoTitle').textContent = kw;
+  if (f.dk) {
+    const p = el('p', 'idesc');
+    if (f.dk !== kw) p.appendChild(el('b', '', f.dk + '  '));
+    p.appendChild(document.createTextNode(DESC[f.dk]));
+    box.appendChild(p);
+  }
+  if (f.years.length) {
+    box.appendChild(el('h3', '', '같은 해에 있었던 일'));
+    const ul = el('ul', 'iyears');
+    f.years.forEach(y => { const li = el('li'); li.append(el('b', '', y), el('span', '', EV[y].join(' · '))); ul.appendChild(li); });
+    box.appendChild(ul);
+  }
+  if (f.qs.length) {
+    box.appendChild(el('h3', '', '시험에 나오는 문장 ' + (f.qs.length > 6 ? '(' + f.qs.length + '개 중 6개)' : '')));
+    const ul = el('ul', 'iqs');
+    f.qs.slice(0, 6).forEach(it => { const li = el('li'); li.append(document.createTextNode(it[2] + ' → '), el('em', '', it[3])); ul.appendChild(li); });
+    box.appendChild(ul);
+  }
+  const others = f.boxes.filter(([b]) => true);
+  if (others.length) {
+    box.appendChild(el('h3', '', '이 말이 나오는 흐름 박스'));
+    const row = el('div', 'iboxes');
+    others.forEach(([b, i]) => {
+      const bt = el('button', 'chip', (i + 1) + '. ' + b.t); bt.type = 'button';
+      bt.addEventListener('click', () => goBox(i)); row.appendChild(bt);
+    });
+    box.appendChild(row);
+  }
+  const go = el('button', 'btn ghost', '정리 탭에서 "' + kw + '" 검색'); go.type = 'button';
+  go.addEventListener('click', () => {
+    closeInfo(); view = 'all'; allUnit = 0; $('allSearch').value = FALIAS[kw] || kw; renderAll(); renderTabs(); window.scrollTo(0, 0);
+  });
+  box.appendChild(go);
+  $('infoWrap').hidden = false; document.body.style.overflow = 'hidden';
+  $('infoSheet').scrollTop = 0; $('infoClose').focus({ preventScroll: true });
+}
+$('infoClose').addEventListener('click', closeInfo);
+$('infoWrap').addEventListener('click', e => { if (e.target === $('infoWrap')) closeInfo(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('infoWrap').hidden) closeInfo(); });
 
 try { const s = localStorage.getItem('hq-subject'); if (s && SUBJ[s]) subj = s; } catch (e) {}
 renderSubjects(); setSubject(subj);
